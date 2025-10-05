@@ -1,3 +1,7 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# defaults file for roles/nginx
+# defaults file for nginx
+nginx_port: 80
+
+# Nowe zmienne dla naszej strony
+welcome_title: "Witaj w Ansible!"
+welcome_body: "Ta strona została wdrożona automatycznie przy użyciu naszej nowej roli Nginx."

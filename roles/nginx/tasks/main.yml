@@ -5,10 +5,38 @@
     update_cache: yes
   changed_when: false # To nie jest zmiana konfiguracyjna
 
-- name: Install nginx package
+# tasks file for nginx
+- name: Install nginx and ufw packages
   ansible.builtin.apt:
-    name: nginx
+    name:
+      - nginx
+      - ufw # <-- Dodajemy ufw do instalacji
     state: present
+
+- name: Allow http traffic and enable ufw
+  community.general.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+    state: enabled # <-- Upewniamy się, że ufw jest aktywne
+  notify: Restart nginx
+
+- name: Deploy nginx configuration from template
+  ansible.builtin.template:
+    src: default.conf.j2
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart nginx # <-- TO JEST KLUCZOWE!
+
+- name: Deploy custom index.html page
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode: '0644'
 
 - name: Ensure nginx service is started and enabled
   ansible.builtin.service:
