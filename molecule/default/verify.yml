@@ -1,0 +1,41 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    # ... (poprzednie zadania weryfikujące pakiet i usługę zostają bez zmian) ...
+    - name: Check if nginx package is installed
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert that nginx is installed
+      ansible.builtin.assert:
+        that: "'nginx' in ansible_facts.packages"
+        fail_msg: "WERYFIKACJA FAILED: Pakiet nginx nie został znaleziony!"
+        success_msg: "WERYFIKACJA OK: Pakiet nginx jest zainstalowany."
+
+    - name: Check if nginx service is running and enabled
+      ansible.builtin.service_facts:
+
+    - name: Assert that nginx service is running and enabled
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['nginx.service'] is defined"
+          - "ansible_facts.services['nginx.service'].state == 'running'"
+          - "ansible_facts.services['nginx.service'].status == 'enabled'"
+        fail_msg: "WERYFIKACJA FAILED: Usługa nginx nie jest uruchomiona lub włączona!"
+        success_msg: "WERYFIKACJA OK: Usługa nginx jest uruchomiona i włączona."
+
+    # NOWE, LEPSZE ZADANIE WERYFIKACYJNE
+    - name: Check if nginx serves our custom content
+      ansible.builtin.uri:
+        url: http://localhost
+        return_content: yes
+      register: http_response
+
+    - name: Assert that our custom content is present
+      ansible.builtin.assert:
+        that:
+          - http_response.status == 200
+          - "'Ta strona została wdrożona automatycznie' in http_response.content"
+        fail_msg: "WERYFIKACJA FAILED: Nginx nie serwuje naszej spersonalizowanej strony!"
+        success_msg: "WERYFIKACJA OK: Nginx serwuje spersonalizowaną stronę."
