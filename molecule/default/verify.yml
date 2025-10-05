@@ -1,0 +1,36 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: Check if nginx package is installed
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert that nginx is installed
+      ansible.builtin.assert:
+        that: "'nginx' in ansible_facts.packages"
+        fail_msg: "WERYFIKACJA FAILED: Pakiet nginx nie został znaleziony!"
+        success_msg: "WERYFIKACJA OK: Pakiet nginx jest zainstalowany."
+
+    - name: Check if nginx service is running and enabled
+      ansible.builtin.service_facts:
+
+    - name: Assert that nginx service is running and enabled
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['nginx.service'] is defined"
+          - "ansible_facts.services['nginx.service'].state == 'running'"
+          - "ansible_facts.services['nginx.service'].status == 'enabled'"
+        fail_msg: "WERYFIKACJA FAILED: Usługa nginx nie jest uruchomiona lub włączona!"
+        success_msg: "WERYFIKACJA OK: Usługa nginx jest uruchomiona i włączona."
+
+    - name: Check if nginx responds on localhost
+      ansible.builtin.uri:
+        url: http://localhost
+      register: http_response
+
+    - name: Assert that nginx returns a success status code
+      ansible.builtin.assert:
+        that: "http_response.status == 200"
+        fail_msg: "WERYFIKACJA FAILED: Nginx nie odpowiedział statusem 200 OK!"
+        success_msg: "WERYFIKACJA OK: Nginx odpowiedział statusem 200 OK."

@@ -1,0 +1,18 @@
+---
+- name: Destroy
+  hosts: all
+  tasks:
+    - name: Stop and disable nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: stopped
+        enabled: no
+      ignore_errors: true
+
+    - name: Purge nginx and its dependencies
+      ansible.builtin.apt:
+        name: nginx
+        state: absent
+        purge: yes
+        autoremove: yes
+      ignore_errors: true
