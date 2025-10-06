@@ -3,18 +3,15 @@ firewall_rules:
   - port: '22'
     proto: 'tcp'
     rule: 'allow'
-    comment: 'Allow SSH connections'
-
+    comment: 'Webserver: Allow SSH'
   - port: '80'
     proto: 'tcp'
     rule: 'allow'
-    comment: 'Allow HTTP for Nginx'
-
-  # Możesz tu dodawać kolejne reguły, np. dla HTTPS
-  # - port: '443'
-  #   proto: 'tcp'
-  #   rule: 'allow'
-  #   comment: 'Allow HTTPS for Nginx'
+    comment: 'Webserver: Allow HTTP'
+  - port: '443'
+    proto: 'tcp'
+    rule: 'allow'
+    comment: 'Allow HTTPS for Nginx'
 
 common_tools_packages:
   - curl

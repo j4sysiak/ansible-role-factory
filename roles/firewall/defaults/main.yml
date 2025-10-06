@@ -1,2 +1,7 @@
 ---
-# defaults file for roles/firewall
+# defaults file for firewall
+firewall_rules:
+  - port: '22'
+    proto: 'tcp'
+    rule: 'allow'
+    comment: 'Default: Allow SSH'
