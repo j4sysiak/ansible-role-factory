@@ -1,0 +1,16 @@
+---
+- name: Verify that common tools are installed
+  hosts: all
+  become: false # Nie potrzebujemy sudo, aby sprawdzać fakty
+
+  tasks:
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Check for presence of each required tool
+      ansible.builtin.assert:
+        that: "item in ansible_facts.packages"
+        fail_msg: "WERYFIKACJA FAILED: Pakiet '{{ item }}' NIE jest zainstalowany!"
+        success_msg: "WERYFIKACJA OK: Pakiet '{{ item }}' jest zainstalowany."
+      loop: "{{ common_tools_packages }}"
