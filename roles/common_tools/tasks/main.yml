@@ -1,0 +1,13 @@
+---
+# Krok 1: Zbierz fakty o WSZYSTKICH zainstalowanych pakietach (robimy to tylko raz)
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+# Krok 2: Przejdź przez naszą listę narzędzi i zainstaluj te, których brakuje
+- name: Install common tools if they are not present
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ common_tools_packages }}"
+  when: item not in ansible_facts.packages # <-- Nowa, poprawna i czytelniejsza logika!

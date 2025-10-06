@@ -2,5 +2,6 @@
 - name: Configure full server stack
   hosts: all
   roles:
+    - role: common_tools
     - role: firewall
     - role: nginx
