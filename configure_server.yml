@@ -3,5 +3,16 @@
   hosts: all
   roles:
     - role: common_tools
+      tags:
+        - tools
+        - packages
+
     - role: firewall
+      tags:
+        - firewall
+        - security
+
     - role: nginx
+      tags:
+        - nginx
+        - web

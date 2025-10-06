@@ -19,15 +19,15 @@ firewall_rules:
 common_tools_packages:
   - curl
   - htop
-  - git
-  - tree
-  - vim
-  - unzip
-  - wget
-  - net-tools
-  - software-properties-common
-  - apt-transport-https
-  - ca-certificates
-  - gnupg
-  - lsb-release
-  - jq
+  #- git
+  #- tree
+  #- vim
+  #- unzip
+  #- wget
+  #- net-tools
+  #- software-properties-common
+  #- apt-transport-https
+  #- ca-certificates
+  #- gnupg
+  #- lsb-release
+  #- jq
