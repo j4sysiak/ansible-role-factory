@@ -1,0 +1,5 @@
+---
+- name: Deploy only Nginx and see dependencies in action
+  hosts: all
+  roles:
+    - role: nginx
