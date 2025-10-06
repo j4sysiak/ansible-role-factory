@@ -1,0 +1,6 @@
+---
+- name: Configure full server stack
+  hosts: all
+  roles:
+    - role: firewall
+    - role: nginx

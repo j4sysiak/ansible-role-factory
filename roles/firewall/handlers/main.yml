@@ -1,0 +1,5 @@
+---
+# handlers file for firewall
+- name: Enable ufw firewall
+  community.general.ufw:
+    state: enabled
