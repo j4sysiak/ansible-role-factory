@@ -37,5 +37,6 @@
         that:
           - http_response.status == 200
           - "'Ta strona została wdrożona automatycznie' in http_response.content"
-        fail_msg: "WERYFIKACJA FAILED: Nginx nie serwuje naszej spersonalizowanej strony!"
-        success_msg: "WERYFIKACJA OK: Nginx serwuje spersonalizowaną stronę."
+          - "'To jest super tajna wiadomość' in http_response.content" # <-- DODAJ TĘ LINIĘ
+        fail_msg: "WERYFIKACJA FAILED: Nginx nie serwuje naszej spersonalizowanej strony z sekretem!"
+        success_msg: "WERYFIKACJA OK: Nginx serwuje spersonalizowaną stronę z sekretem."
