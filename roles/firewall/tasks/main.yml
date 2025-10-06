@@ -1,2 +1,15 @@
 ---
-# tasks file for roles/firewall
+# tasks file for firewall
+- name: Ensure ufw package is present
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Apply firewall rules
+  community.general.ufw:
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    rule: "{{ item.rule }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ firewall_rules }}"
+  notify: Enable ufw firewall

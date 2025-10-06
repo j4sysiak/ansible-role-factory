@@ -1,31 +1,13 @@
 ---
 # tasks file for nginx
-- name: Ensure apt cache is updated
-  ansible.builtin.apt:
-    update_cache: yes
-  changed_when: false # To nie jest zmiana konfiguracyjna
-
-
-# tasks read vault file
 - name: Load vaulted variables
   ansible.builtin.include_vars:
     file: vault.yml
 
-# tasks file for nginx
-- name: Install nginx and ufw packages
+- name: Install nginx package
   ansible.builtin.apt:
-    name:
-      - nginx
-      - ufw # <-- Dodajemy ufw do instalacji
+    name: nginx
     state: present
-
-- name: Allow http traffic and enable ufw
-  community.general.ufw:
-    rule: allow
-    port: '80'
-    proto: tcp
-    state: enabled # <-- Upewniamy się, że ufw jest aktywne
-  notify: Restart nginx
 
 - name: Deploy nginx configuration from template
   ansible.builtin.template:
@@ -34,7 +16,7 @@
     owner: root
     group: root
     mode: '0644'
-  notify: Restart nginx # <-- TO JEST KLUCZOWE!
+  notify: Restart nginx
 
 - name: Deploy custom index.html page
   ansible.builtin.template:
