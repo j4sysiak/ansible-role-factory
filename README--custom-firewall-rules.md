@@ -4,6 +4,24 @@
 ssh ubuntu@141.144.231.36
 sudo ufw status verbose
 
+
+ubuntu@instance-20250920-1026:~$ sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+80/tcp                     ALLOW IN    Anywhere                   # Webserver: A                                                                                                             llow HTTP
+22/tcp                     ALLOW IN    Anywhere                   # Webserver: A                                                                                                             llow SSH
+443/tcp                    ALLOW IN    Anywhere                   # Allow HTTPS                                                                                                              for Nginx
+80/tcp (v6)                ALLOW IN    Anywhere (v6)              # Webserver: A                                                                                                             llow HTTP
+22/tcp (v6)                ALLOW IN    Anywhere (v6)              # Webserver: A                                                                                                             llow SSH
+443/tcp (v6)               ALLOW IN    Anywhere (v6)              # Allow HTTPS
+
+
+
 ////////////////////////
 
 
