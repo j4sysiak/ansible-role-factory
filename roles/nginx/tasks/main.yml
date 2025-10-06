@@ -5,6 +5,12 @@
     update_cache: yes
   changed_when: false # To nie jest zmiana konfiguracyjna
 
+
+# tasks read vault file
+- name: Load vaulted variables
+  ansible.builtin.include_vars:
+    file: vault.yml
+
 # tasks file for nginx
 - name: Install nginx and ufw packages
   ansible.builtin.apt:
