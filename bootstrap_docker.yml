@@ -1,0 +1,7 @@
+---
+- name: Bootstrap Docker container with Python
+  hosts: icinga_master
+  gather_facts: false
+  tasks:
+    - name: Update apt cache and install python3
+      ansible.builtin.raw: apt-get update && apt-get install -y python3
