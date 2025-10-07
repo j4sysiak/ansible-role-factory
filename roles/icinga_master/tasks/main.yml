@@ -1,0 +1,83 @@
+---
+# tasks file for icinga_master
+- name: Load vaulted variables
+  ansible.builtin.include_vars:
+    file: vault.yml
+
+- name: Install prerequisite packages in non-interactive mode
+  ansible.builtin.apt:
+    name: ['apache2', 'mariadb-server', 'php', 'php-mysql', 'php-gd', 'php-intl', 'php-imagick', 'libapache2-mod-php']
+    state: present
+    update_cache: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Start MariaDB service manually
+  ansible.builtin.command: service mariadb start
+  changed_when: false
+
+- name: Secure MariaDB and set root password
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ icinga_db_password }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    check_implicit_admin: yes
+
+- name: Create database for Icinga Web
+  community.mysql.mysql_db:
+    name: icingaweb2
+    state: present
+    login_user: root
+    login_password: "{{ icinga_db_password }}"
+
+- name: Create database user for Icinga Web
+  community.mysql.mysql_user:
+    name: icingaweb2
+    host: localhost
+    password: "{{ icinga_db_password }}"
+    priv: 'icingaweb2.*:ALL'
+    state: present
+    login_user: root
+    login_password: "{{ icinga_db_password }}"
+
+- name: Add Icinga repository (same as agent)
+  ansible.builtin.apt_repository:
+    repo: "{{ icinga_repo_url }}"
+    state: present
+    filename: icinga
+
+- name: Install Icinga 2 and MySQL connector
+  ansible.builtin.apt:
+    name: ['icinga2', 'icinga2-ido-mysql']
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Enable Icinga 2 ido-mysql feature
+  ansible.builtin.command: icinga2 feature enable ido-mysql
+  args:
+    creates: /etc/icinga2/features-enabled/ido-mysql.conf
+
+- name: Start Icinga 2 service manually
+  ansible.builtin.command: service icinga2 start
+  changed_when: false
+
+- name: Start Apache2 service manually
+  ansible.builtin.command: service apache2 start
+  changed_when: false
+
+- name: Install Icinga Web 2
+  ansible.builtin.apt:
+    name: icingaweb2
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Create Icinga Web 2 setup token
+  ansible.builtin.command: icingacli setup token create
+  register: icinga_token
+  changed_when: true
+
+- name: Display the setup token
+  ansible.builtin.debug:
+    msg: "Twoj token instalacyjny Icinga Web 2 to: {{ icinga_token.stdout }}"
