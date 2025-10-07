@@ -16,12 +16,24 @@
   ansible.builtin.command: service mariadb start
   changed_when: false
 
+- name: Install pip for Python
+  ansible.builtin.apt:
+    name: python3-pip
+    state: present
+
+- name: Install required mysqlclient library for Python
+  ansible.builtin.pip:
+    name: mysqlclient
+
 - name: Secure MariaDB and set root password
   community.mysql.mysql_user:
     name: root
     password: "{{ icinga_db_password }}"
     login_unix_socket: /var/run/mysqld/mysqld.sock
     check_implicit_admin: yes
+
+
+
 
 - name: Create database for Icinga Web
   community.mysql.mysql_db:
