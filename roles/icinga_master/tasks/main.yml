@@ -1,0 +1,215 @@
+---
+# tasks file for icinga_master
+- name: Load vaulted variables
+  ansible.builtin.include_vars:
+    file: vault.yml
+
+- name: Install prerequisite packages in non-interactive mode
+  ansible.builtin.apt:
+    name: ['apache2', 'mariadb-server', 'php', 'php-mysql', 'php-gd', 'php-intl', 'php-imagick', 'libapache2-mod-php']
+    state: present
+    update_cache: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Install build dependencies for mysqlclient
+  ansible.builtin.apt:
+    name:
+      - python3-dev
+      - default-libmysqlclient-dev
+      - build-essential
+      - pkg-config
+    state: present
+
+- name: Install pip for Python
+  ansible.builtin.apt:
+    name: python3-pip
+    state: present
+
+- name: Install required mysqlclient library for Python
+  ansible.builtin.pip:
+    name: mysqlclient
+
+- name: Start MariaDB service manually
+  ansible.builtin.command: service mariadb start
+  changed_when: false
+
+- name: Wait for MariaDB to be ready
+  ansible.builtin.command: mysqladmin ping
+  changed_when: false
+  retries: 30
+  delay: 5
+  register: db_ping
+  until: db_ping.rc == 0
+
+- name: Deploy .my.cnf file for root to allow login
+  ansible.builtin.template:
+    src: root.my.cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Set root password for all root accounts
+  community.mysql.mysql_query:
+    query: "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ icinga_db_password }}';"
+
+- name: Create Icinga 2 IDO database
+  community.mysql.mysql_db:
+    name: icinga2
+    state: present
+
+- name: Create Icinga 2 IDO database user
+  community.mysql.mysql_user:
+    name: icinga2
+    host: localhost
+    password: "{{ icinga_db_password }}"
+    priv: 'icinga2.*:ALL'
+    state: present
+
+- name: Flush MySQL privileges to apply changes
+  community.mysql.mysql_query:
+    query: "FLUSH PRIVILEGES;"
+
+- name: Add Icinga repository GPG key
+  ansible.builtin.get_url:
+    url: "{{ icinga_repo_key_url }}"
+    dest: /etc/apt/trusted.gpg.d/icinga.asc
+    mode: '0644'
+    force: true
+
+- name: Add Icinga repository (same as agent)
+  ansible.builtin.apt_repository:
+    repo: "{{ icinga_repo_url }}"
+    state: present
+    filename: icinga
+
+- name: Install Icinga 2 and MySQL connector
+  ansible.builtin.apt:
+    name: ['icinga2', 'icinga2-ido-mysql']
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Enable Icinga 2 ido-mysql feature
+  ansible.builtin.command: icinga2 feature enable ido-mysql
+  args:
+    creates: /etc/icinga2/features-enabled/ido-mysql.conf
+
+- name: Configure database connection for ido-mysql
+  ansible.builtin.template:
+    src: ido-mysql.conf.j2
+    dest: /etc/icinga2/features-available/ido-mysql.conf
+    owner: root
+    group: nagios
+    mode: '0660'
+  notify: Restart Icinga 2
+
+- name: Start Icinga 2 service
+  ansible.builtin.command: service icinga2 start
+  changed_when: false
+
+- name: Start Apache2 service manually
+  ansible.builtin.command: service apache2 start
+  changed_when: false
+
+- name: Install Icinga Web 2
+  ansible.builtin.apt:
+    name: icingaweb2
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Generate Icinga Web 2 setup token if not present (manual fallback)
+  ansible.builtin.shell: |
+    head -c 12 /dev/urandom | base64 | tee /etc/icingaweb2/setup.token
+    chmod 0660 /etc/icingaweb2/setup.token
+  args:
+    creates: /etc/icingaweb2/setup.token
+  register: setup_token_result
+  failed_when: false
+
+- name: Slurp Icinga Web 2 setup token from remote host
+  ansible.builtin.slurp:
+    src: /etc/icingaweb2/setup.token
+  register: icingaweb2_token_slurp
+  ignore_errors: true
+
+- name: Display the setup token (manual fallback, remote)
+  ansible.builtin.debug:
+    msg: "Twój token instalacyjny Icinga Web 2 to: {{ icingaweb2_token_slurp['content'] | b64decode | trim }}"
+  when: icingaweb2_token_slurp is defined and icingaweb2_token_slurp['content'] is defined
+
+- name: Install vi (vim-tiny) and curl for diagnostics and editing
+  ansible.builtin.apt:
+    name:
+      - vim-tiny
+      - curl
+    state: present
+    update_cache: yes
+
+- name: Enable Icinga2 API feature
+  ansible.builtin.command: icinga2 feature enable api
+  args:
+    creates: /etc/icinga2/features-enabled/api.conf
+
+- name: Ensure certs directory exists
+  ansible.builtin.file:
+    path: /var/lib/icinga2/certs
+    state: directory
+    owner: nagios
+    group: nagios
+    mode: '0700'
+
+- name: Generate CA if not present
+  ansible.builtin.command: icinga2 pki new-ca
+  args:
+    creates: /var/lib/icinga2/ca/ca.crt
+
+- name: Generate master certificate as nagios
+  ansible.builtin.command: >
+    su -s /bin/bash nagios -c "icinga2 pki new-cert --cn icinga-master --key /var/lib/icinga2/certs/icinga-master.key --cert /var/lib/icinga2/certs/icinga-master.crt"
+  args:
+    creates: /var/lib/icinga2/certs/icinga-master.crt
+
+- name: Copy CA cert to certs directory
+  ansible.builtin.copy:
+    src: /var/lib/icinga2/ca/ca.crt
+    dest: /var/lib/icinga2/certs/ca.crt
+    owner: nagios
+    group: nagios
+    mode: '0644'
+    remote_src: yes
+
+- name: Ensure api-users.conf exists with icingaweb2 user
+  ansible.builtin.copy:
+    dest: /etc/icinga2/conf.d/api-users.conf
+    content: |
+      object ApiUser "icingaweb2" {
+        password = "{{ icinga_api_password | default('icingaweb2pass') }}"
+        permissions = [ "status/query", "actions/*", "objects/modify/*", "objects/query/*" ]
+      }
+    owner: nagios
+    group: nagios
+    mode: '0640'
+
+- name: Restart icinga2 to apply API and user changes
+  ansible.builtin.service:
+    name: icinga2
+    state: restarted
+
+- name: Ensure mod_rewrite is enabled for Apache
+  ansible.builtin.command: a2enmod rewrite
+  args:
+    creates: /etc/apache2/mods-enabled/rewrite.load
+
+- name: Ensure icingaweb2 Apache config is enabled
+  ansible.builtin.file:
+    src: /etc/apache2/conf-available/icingaweb2.conf
+    dest: /etc/apache2/conf-enabled/icingaweb2.conf
+    state: link
+
+- name: Restart Apache to apply config changes
+  ansible.builtin.service:
+    name: apache2
+    state: restarted

@@ -1,0 +1,4 @@
+---
+# handlers file for icinga_master
+- name: Restart Icinga 2
+  ansible.builtin.command: service icinga2 restart

@@ -28,3 +28,8 @@ common_tools_packages:
   #- gnupg
   #- lsb-release
   #- jq
+
+# Zmienne dla repozytorium Icinga
+# Uwaga: `jammy` to nazwa kodowa Ubuntu 22.04.*
+icinga_repo_url: "deb https://packages.icinga.com/ubuntu icinga-jammy main"
+icinga_repo_key_url: "https://packages.icinga.com/icinga.key"
