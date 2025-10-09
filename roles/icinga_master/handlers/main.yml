@@ -1,3 +1,4 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# handlers file for roles/icinga_master
+# handlers file for icinga_master
+- name: Restart Icinga 2
+  ansible.builtin.command: service icinga2 restart

@@ -1,0 +1,48 @@
+---
+- name: Verify the Icinga Master installation
+  hosts: icinga_master
+  become: false
+
+  tasks:
+    - name: 1. Check if key packages are installed
+      block:
+        - name: Gather package facts
+          ansible.builtin.package_facts:
+            manager: auto
+
+        - name: Assert that key packages exist
+          ansible.builtin.assert:
+            that: "item in ansible_facts.packages"
+            fail_msg: "WERYFIKACJA FAILED: Kluczowy pakiet '{{ item }}' nie jest zainstalowany!"
+            success_msg: "WERYFIKACJA OK: Pakiet '{{ item }}' jest zainstalowany."
+          loop:
+            - icinga2
+            - icingaweb2
+            - apache2
+
+    - name: 2. Check if key services are listening on their ports
+      ansible.builtin.wait_for:
+        host: localhost
+        port: "{{ item.port }}"
+        state: started
+        timeout: 5
+        msg: "WERYFIKACJA FAILED: Port {{ item.port }} dla usługi {{ item.name }} nie jest otwarty!"
+      loop:
+        - { name: 'Apache (Icinga Web)', port: 80 }
+        - { name: 'Icinga 2 Agent Port', port: 5665 }
+
+    - name: 3. Check if the Icinga Web 2 setup page is responding
+      block:
+        - name: Query the Icinga Web 2 setup URL
+          ansible.builtin.uri:
+            url: http://localhost/icingaweb2/setup
+            return_content: yes
+          register: web_response
+
+        - name: Assert that the web page returns a success code and correct content
+          ansible.builtin.assert:
+            that:
+              - web_response.status == 200
+              - "'Icinga Web 2 Setup' in web_response.content"
+            fail_msg: "WERYFIKACJA FAILED: Strona instalacyjna Icinga Web 2 nie odpowiada poprawnie!"
+            success_msg: "WERYFIKACJA OK: Strona instalacyjna Icinga Web 2 jest dostępna!"
