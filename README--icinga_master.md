@@ -1,12 +1,18 @@
-# source ~/ansible-venv/bin/activate
 
-# docker start icinga-master
+first step - uruchom dockera:
+# README--docker.md
+ 
+*******************************************************
+Następnie uruchamiamy playbook:
 
 # ansible-playbook deploy_icinga_master.yml --ask-vault-pass
 
 # ansible-playbook verify_icinga_master.yml
 
+http://localhost:8080/icingaweb2/dashboard
+http://localhost:8080/icingaweb2/setup
 
+*******************************************************
 
 Ewentualna diagnostyka:
 Musimy dostać się do powłoki bash wewnątrz naszego kontenera icinga-master.
@@ -62,3 +68,22 @@ SOURCE /usr/share/icinga2-ido-mysql/schema/mysql.sql;
 ```
 
 Po tych krokach Icinga2 powinna działać poprawnie, a port 5665 będzie otwarty.
+
+## Sprawdzanie dostępności Icinga Web 2
+
+- Jeśli sprawdzasz z hosta (np. przeglądarka, Ansible):
+  http://localhost:8080/icingaweb2/setup
+  (port 8080 jest mapowany na port 80 w kontenerze)
+
+- Jeśli sprawdzasz z wnętrza kontenera:
+  http://localhost/icingaweb2/setup
+  (port 80 jest otwarty w kontenerze)
+
+Przykład:
+
+Z hosta:
+    curl http://localhost:8080/icingaweb2/setup
+
+Z kontenera:
+    docker exec -it icinga-master bash
+    curl http://localhost/icingaweb2/setup
