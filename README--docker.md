@@ -1,6 +1,6 @@
 # source ~/ansible-venv/bin/activate
 
-tworzymy image i kontainer
+tworzymy image i container
 # docker run \
 -d \
 --name icinga-master \
