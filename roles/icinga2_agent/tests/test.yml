@@ -3,4 +3,4 @@
 - hosts: localhost
   remote_user: root
   roles:
-    - roles/icinga_agent
+    - roles/icinga2_agent

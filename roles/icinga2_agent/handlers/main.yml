@@ -1,0 +1,5 @@
+# Handlers
+- name: Restart icinga2
+  ansible.builtin.service:
+    name: icinga2
+    state: restarted

@@ -1,0 +1,21 @@
+---
+- name: Sprawdź czy istnieje grupa icinga
+  ansible.builtin.getent:
+    database: group
+    key: icinga
+
+- name: Sprawdź czy istnieje użytkownik icinga
+  ansible.builtin.getent:
+    database: passwd
+    key: icinga
+
+- name: Sprawdź czy istnieje katalog certyfikatów
+  ansible.builtin.stat:
+    path: /var/lib/icinga2/certs
+  register: certs_dir
+
+- name: Zweryfikuj istnienie katalogu certyfikatów
+  ansible.builtin.assert:
+    that:
+      - certs_dir.stat.exists
+      - certs_dir.stat.isdir
