@@ -35,7 +35,7 @@
       block:
         - name: Query the Icinga Web 2 setup URL
           ansible.builtin.uri:
-            url: "http://{{ ansible_host }}:8080/icingaweb2/setup"
+            url: "http://127.0.0.1/icingaweb2/setup"  # sprawdzanie wewnąntrz kontenera
             return_content: yes
           register: web_response
           retries: 5
