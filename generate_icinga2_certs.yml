@@ -1,0 +1,69 @@
+---
+- name: Generowanie certyfikatów Icinga2 na serwerze Oracle
+  hosts: oracle_vms
+  become: yes
+  tasks:
+    - name: Upewnij się, że katalog certs istnieje
+      ansible.builtin.file:
+        path: /var/lib/icinga2/certs/
+        state: directory
+        owner: icinga
+        group: icinga
+        mode: '0750'
+
+    - name: Usuń stare pliki klucza i CSR (jeśli istnieją)
+      ansible.builtin.file:
+        path: "/var/lib/icinga2/certs/{{ inventory_hostname }}.{{ item }}"
+        state: absent
+      loop:
+        - key
+        - csr
+
+    - name: Usuń stare pliki klucza i CSR (jeśli istnieją)
+      ansible.builtin.file:
+        path: "/tmp/{{ inventory_hostname }}.{{ item }}"
+        state: absent
+      loop:
+        - key
+        - csr
+
+    - name: Wygeneruj klucz i CSR w /tmp
+      ansible.builtin.command: >
+        icinga2 pki new-cert
+        --cn {{ inventory_hostname }}
+        --key /tmp/{{ inventory_hostname }}.key
+        --csr /tmp/{{ inventory_hostname }}.csr
+      args:
+        creates: /tmp/{{ inventory_hostname }}.key
+
+    - name: Przenieś klucz do katalogu certs
+      ansible.builtin.command: >
+        mv /tmp/{{ inventory_hostname }}.key /var/lib/icinga2/certs/{{ inventory_hostname }}.key
+      args:
+        removes: /tmp/{{ inventory_hostname }}.key
+
+    - name: Przenieś CSR do katalogu certs
+      ansible.builtin.command: >
+        mv /tmp/{{ inventory_hostname }}.csr /var/lib/icinga2/certs/{{ inventory_hostname }}.csr
+      args:
+        removes: /tmp/{{ inventory_hostname }}.csr
+
+    - name: Ustaw właściciela i uprawnienia na plikach
+      ansible.builtin.file:
+        path: /var/lib/icinga2/certs/{{ inventory_hostname }}.{{ item }}
+        owner: icinga
+        group: icinga
+        mode: "{{ '0640' if item == 'key' else '0644' }}"
+      loop:
+        - key
+        - csr
+
+    - name: Podpisz CSR na serwerze 'icinga-master'
+      ansible.builtin.command: >
+        icinga2 pki sign-csr
+        --csr /var/lib/icinga2/certs/{{ inventory_hostname }}.csr
+        --cert /var/lib/icinga2/certs/{{ inventory_hostname }}.crt
+      args:
+        creates: /var/lib/icinga2/certs/{{ inventory_hostname }}.crt
+      when: inventory_hostname == 'icinga-master'
+

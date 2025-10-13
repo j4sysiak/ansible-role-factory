@@ -17,5 +17,5 @@
         - nginx
         - web
 
-    - role: icinga_agent
+    - role: icinga2_agent
       tags: [icinga, monitoring] # <-- Dodaj nową rolę z tagami

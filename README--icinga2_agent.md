@@ -1,4 +1,9 @@
-icinga_agent
+icinga2_agent  -->  to jets po prostu usługa agenta Icinga2, 
+       którą instalujemy na zdalnym serwerze, aby umożliwić monitorowanie tego serwera 
+przez serwer Icinga2 (master) - zadanie roles/icinga-master.
+W tym przykładzie zainstalujemy agenta na serwerze Ubuntu 22.04 
+              o adresie IP 141.144.231.36  tag w inventory: [oracle_vms]
+
 ------------
 
 Uruchamiamy playbook:

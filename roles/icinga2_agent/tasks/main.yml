@@ -60,18 +60,6 @@
   changed_when: "'Enabled' in icinga2_api_enable.stdout"
   notify: Restart icinga2
 
-
-#- name: Skopiuj certyfikaty i konfigurację agenta (przykład)
-    #  ansible.builtin.copy:
-    #src: files/icinga2/{{ inventory_hostname }}/
-    #dest: /etc/icinga2/
-    #owner: root
-    #group: root
-    #mode: '0644'
-  #notify: Restart icinga2
-  #ignore_errors: yes
-
-
 - name: Sprawdź poprawność konfiguracji Icinga2
   ansible.builtin.command: icinga2 daemon -C
   register: icinga2_configtest
@@ -83,5 +71,3 @@
     name: icinga2
     state: started
     enabled: yes
-
-
