@@ -1,0 +1,122 @@
+---
+- name: Generowanie klucza i CSR na agentach
+  hosts: oracle_vms
+  become: yes
+  tasks:
+    - name: Upewnij się, że katalog certs istnieje
+      ansible.builtin.file:
+        path: /var/lib/icinga2/certs/
+        state: directory
+        owner: icinga
+        group: icinga
+        mode: '0750'
+
+    - name: Usuń stare pliki klucza i CSR (jeśli istnieją)
+      ansible.builtin.file:
+        path: "/var/lib/icinga2/certs/{{ inventory_hostname }}.{{ item }}"
+        state: absent
+      loop:
+        - key
+        - csr
+
+    - name: Usuń stare pliki klucza i CSR z /tmp (jeśli istnieją)
+      ansible.builtin.file:
+        path: "/tmp/{{ inventory_hostname }}.{{ item }}"
+        state: absent
+      loop:
+        - key
+        - csr
+
+    - name: Wygeneruj klucz i CSR w /tmp
+      ansible.builtin.command: >
+        icinga2 pki new-cert
+        --cn {{ inventory_hostname }}
+        --key /tmp/{{ inventory_hostname }}.key
+        --csr /tmp/{{ inventory_hostname }}.csr
+      args:
+        creates: /tmp/{{ inventory_hostname }}.key
+
+    - name: Przenieś klucz do katalogu certs
+      ansible.builtin.command: >
+        mv /tmp/{{ inventory_hostname }}.key /var/lib/icinga2/certs/{{ inventory_hostname }}.key
+      args:
+        removes: /tmp/{{ inventory_hostname }}.key
+
+    - name: Przenieś CSR do katalogu certs
+      ansible.builtin.command: >
+        mv /tmp/{{ inventory_hostname }}.csr /var/lib/icinga2/certs/{{ inventory_hostname }}.csr
+      args:
+        removes: /tmp/{{ inventory_hostname }}.csr
+
+    - name: Ustaw właściciela i uprawnienia na plikach
+      ansible.builtin.file:
+        path: /var/lib/icinga2/certs/{{ inventory_hostname }}.{{ item }}
+        owner: icinga
+        group: icinga
+        mode: "{{ '0640' if item == 'key' else '0644' }}"
+      loop:
+        - key
+        - csr
+
+    - name: Pobierz CSR z agenta na lokalny host WSL
+      ansible.builtin.fetch:
+        src: /var/lib/icinga2/certs/{{ inventory_hostname }}.csr
+        dest: /home/jacek/tmp/csrs/
+        flat: yes
+
+- name: Skopiuj CSR każdego agenta na serwer master
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Skopiuj CSR na icinga_master
+      ansible.builtin.copy:
+        src: /home/jacek/tmp/csrs/{{ item }}.csr
+        dest: /etc/icinga2/pki/{{ item }}.csr
+        owner: root
+        group: root
+        mode: '0644'
+      delegate_to: icinga-master
+      loop: "{{ groups['oracle_vms'] }}"
+
+
+# taski na serwerze master-vm, czyli na Dockerze
+# podpisz certyfikat na serwerze master
+# skopiuj podpisany certyfikat z powrotem na agenta i umieść w /var/lib/icinga2/certs/
+# zrestartuj agenta
+- name: Obsługa CSR na serwerze master
+  hosts: icinga_master
+  tasks:
+    - name: Sprawdź użytkownika
+      ansible.builtin.command: whoami
+      register: whoami_out
+    - debug: var=whoami_out.stdout
+
+    - name: Podpisz CSR każdego agenta
+      become: yes
+      ansible.builtin.command: >
+        icinga2 pki sign-csr
+        --csr /etc/icinga2/pki/{{ item }}.csr
+        --cert /etc/icinga2/pki/{{ item }}.crt
+      args:
+        creates: /etc/icinga2/pki/{{ item }}.crt
+      loop: "{{ groups['oracle_vms'] }}"
+
+    - name: Pobierz podpisany certyfikat z mastera na localhost
+      ansible.builtin.fetch:
+        src: /etc/icinga2/pki/{{ item }}.crt
+        dest: /home/jacek/tmp/csrs/signed/
+        flat: yes
+      loop: "{{ groups['oracle_vms'] }}"
+
+
+- name: Skopiuj certyfikat na agenta Oracle
+  hosts: oracle_vms
+  tasks:
+    - name: Prześlij certyfikat na agenta
+      ansible.builtin.copy:
+        src: /home/jacek/tmp/csrs/signed/{{ inventory_hostname }}.crt
+        dest: /var/lib/icinga2/certs/{{ inventory_hostname }}.crt
+        owner: root
+        group: root
+        mode: '0644'
+      become: yes

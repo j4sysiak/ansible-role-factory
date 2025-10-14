@@ -1,0 +1,73 @@
+---
+# tasks file for icinga_agent
+- name: Utwórz grupę icinga (jeśli nie istnieje)
+  ansible.builtin.group:
+    name: icinga
+    system: yes
+    state: present
+
+- name: Utwórz użytkownika icinga (jeśli nie istnieje)
+  ansible.builtin.user:
+    name: icinga
+    group: icinga
+    system: yes
+    shell: /usr/sbin/nologin
+    create_home: no
+    state: present
+
+- name: Utwórz katalog na certyfikaty
+  ansible.builtin.file:
+    path: /var/lib/icinga2/certs
+    state: directory
+    owner: icinga
+    group: icinga
+    mode: '0750'
+    recurse: yes
+
+- name: Install prerequisite packages for apt repositories
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - gnupg
+    state: present
+    update_cache: yes
+
+- name: Add Icinga repository GPG key
+  ansible.builtin.get_url:
+    url: "{{ icinga_repo_key_url }}"
+    dest: /etc/apt/trusted.gpg.d/icinga.asc
+    mode: '0644'
+    force: true
+  register: add_key
+  until: add_key is succeeded
+  retries: 5
+  delay: 2
+
+- name: Add Icinga apt repository
+  ansible.builtin.apt_repository:
+    repo: "{{ icinga_repo_url }}"
+    state: present
+    filename: icinga
+
+- name: Install Icinga 2 agent package
+  ansible.builtin.apt:
+    name: icinga2
+    state: present
+
+- name: Włącz funkcję API w Icinga2
+  ansible.builtin.command: icinga2 feature enable api
+  register: icinga2_api_enable
+  changed_when: "'Enabled' in icinga2_api_enable.stdout"
+  notify: Restart icinga2
+
+- name: Sprawdź poprawność konfiguracji Icinga2
+  ansible.builtin.command: icinga2 daemon -C
+  register: icinga2_configtest
+  changed_when: false
+  failed_when: icinga2_configtest.rc != 0
+
+- name: Ensure Icinga 2 service is started and enabled
+  ansible.builtin.service:
+    name: icinga2
+    state: started
+    enabled: yes

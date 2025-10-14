@@ -1,0 +1,5 @@
+---
+- name: Deploy Icinga Master Server to Docker
+  hosts: icinga_master
+  roles:
+    - role: icinga_master

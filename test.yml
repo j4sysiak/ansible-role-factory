@@ -1,0 +1,5 @@
+- hosts: icinga_master
+  gather_facts: false
+  tasks:
+    - name: Test echo
+      command: echo "Hello from container"

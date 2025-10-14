@@ -1,0 +1,5 @@
+---
+- name: Deploy icinga2 to Docker
+  hosts: oracle_vms
+  roles:
+    - role: icinga2_agent
