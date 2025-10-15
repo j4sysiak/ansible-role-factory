@@ -12,8 +12,14 @@ Uruchamiamy playbook:
 
 # ansible-playbook verify_icinga2_agent.yml
 
+Uruchamiamy playbook icinga_master
+# wg instrukcji z README--icinga_master.md
+# ansible-playbook deploy_icinga_master.yml --ask-vault-pass
 
-Po pomyślnym wykonaniu zaloguj się na serwer i sprawdź, czy usługa działa:
+Uruchamiamy generowanie i podpisywanie certyfikatu:
+# ansible-playbook -i inventory/hosts.ini generate_icinga2_certs.yml
+
+Po pomyślnym wykonaniu zaloguj się na serwer Oracla i sprawdź, czy usługa działa:
  
 ssh ubuntu@141.144.231.36
 # systemctl status icinga2_agent
