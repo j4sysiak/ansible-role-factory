@@ -1,0 +1,15 @@
+---
+# defaults file for unattended_upgrades
+
+# Lista repozytoriów, z których mają być pobierane aktualizacje.
+# Domyślnie tylko najważniejsze - bezpieczeństwo.
+unattended_origins_patterns:
+  - '"${distro_id}:${distro_codename}-security";'
+
+# Czy wysyłać email z powiadomieniem? (pusty string = nie wysyłaj)
+unattended_email: ""
+
+# Czy serwer ma się automatycznie restartować, jeśli aktualizacja tego wymaga?
+# BARDZO WAŻNE: W środowiskach produkcyjnych często ustawia się to na 'false'.
+unattended_automatic_reboot: "false"
+unattended_automatic_reboot_time: "02:00"

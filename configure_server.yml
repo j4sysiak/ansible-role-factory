@@ -2,6 +2,9 @@
 - name: Configure full server stack
   hosts: all
   roles:
+    - role: unattended_upgrades
+      tags: [ system, security ]
+
     - role: common_tools
       tags:
         - tools
@@ -18,4 +21,4 @@
         - web
 
     - role: icinga2_agent
-      tags: [icinga, monitoring] # <-- Dodaj nową rolę z tagami
+      tags: [icinga, monitoring]
