@@ -1,0 +1,16 @@
+---
+# tasks file for python_datascience
+
+- name: Zainstaluj pakiety systemowe dla Pythona (python3, pip, venv)
+  become: yes
+  ansible.builtin.package:
+    name: "{{ python_system_packages }}"
+    state: present
+    update_cache: yes # Dobra praktyka w systemach Debian/Ubuntu - uruchamia 'apt update'
+
+- name: Zainstaluj biblioteki Data Science za pomocą pip
+  become: yes
+  ansible.builtin.pip:
+    name: "{{ python_pip_packages }}"
+    state: present
+    # Można dodać 'virtualenv: /opt/datascience_venv' aby instalować w środowisku wirtualnym

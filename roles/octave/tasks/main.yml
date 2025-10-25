@@ -1,0 +1,8 @@
+---
+# tasks file for octave
+
+- name: Zainstaluj pakiet GNU Octave
+  become: yes  # Wykonaj jako root (użyj sudo)
+  ansible.builtin.package:
+    name: "{{ octave_package_name }}"
+    state: present # Upewnij się, że pakiet jest zainstalowany

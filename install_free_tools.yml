@@ -1,0 +1,8 @@
+---
+- name: Skonfiguruj środowisko do obliczeń naukowych na serwerach OCI
+  hosts: oci_servers  # <-- ZMIANA: Wskazujemy na naszą grupę z pliku inventory
+  become: yes         # <-- WAŻNE: Włączamy eskalację uprawnień (sudo) na zdalnym serwerze
+
+  roles:
+    - role: octave
+    - role: python_datascience
