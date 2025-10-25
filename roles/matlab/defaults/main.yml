@@ -1,0 +1,16 @@
+---
+# defaults file for matlab
+
+# Wersja MATLABa używana w ścieżkach
+matlab_version: "R2022b"
+
+# Główna ścieżka instalacji
+matlab_install_path: "/usr/local/MATLAB"
+# Pełna ścieżka docelowa
+matlab_destination_folder: "{{ matlab_install_path }}/{{ matlab_version }}"
+
+# Lokalizacja dla tymczasowych plików instalacyjnych na maszynie docelowej
+matlab_tmp_install_dir: "/tmp/matlab_installer_{{ matlab_version }}"
+
+# Ścieżka na MASZYNIE KONTROLUJĄCEJ (Twoim komputerze) do archiwum z instalatorem
+matlab_installer_local_path: "/path/on/your/computer/to/matlab_{{ matlab_version }}_glnxa64.zip"

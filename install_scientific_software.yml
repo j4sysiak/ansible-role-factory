@@ -1,0 +1,17 @@
+---
+- name: Wdróż oprogramowanie naukowe na serwerach OCI
+  hosts: oci_servers  # <-- ZMIANA: Wskazujemy na naszą grupę z pliku inventory
+  become: yes         # <-- WAŻNE: Włączamy eskalację uprawnień (sudo) na zdalnym serwerze
+
+
+  # Załaduj sekrety dla roli matlab
+  vars_files:
+    - roles/matlab/vars/vault.yml
+
+  roles:
+    - role: matlab
+      # Nadpisz zmienne, jeśli potrzebujesz innej wersji niż domyślna
+      # matlab_version: "R2021a"
+
+    - role: matlab_runtime
+      # matlab_runtime_version: "v911"

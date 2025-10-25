@@ -1,0 +1,12 @@
+# Ten plik jest zarządzany przez Ansible
+#
+# Generowany plik wejściowy dla cichej instalacji MATLABa
+
+destinationFolder={{ matlab_destination_folder }}
+fileInstallationKey={{ matlab_file_installation_key }}
+agreeToLicense=yes
+outputFile=/var/log/matlab_{{ matlab_version }}_install.log
+mode=silent
+
+# Najczęstszy scenariusz korporacyjny: wskazanie serwera licencji
+licenseServer={{ matlab_license_server }}

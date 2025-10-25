@@ -1,0 +1,7 @@
+---
+# defaults file for matlab_runtime
+matlab_runtime_version: "R2022b" # lub dokładna wersja runtime np. v913
+matlab_runtime_install_path: "/usr/local/MATLAB/MATLAB_Runtime"
+matlab_runtime_destination_folder: "{{ matlab_runtime_install_path }}/{{ matlab_runtime_version }}"
+matlab_runtime_tmp_install_dir: "/tmp/matlab_runtime_installer_{{ matlab_runtime_version }}"
+matlab_runtime_installer_local_path: "/path/on/your/computer/to/MATLAB_Runtime_{{ matlab_runtime_version }}_glnxa64.zip"

@@ -1,0 +1,42 @@
+---
+# tasks file for matlab
+
+- name: Sprawdź, czy MATLAB jest już zainstalowany (idempotentność)
+  stat:
+    path: "{{ matlab_destination_folder }}/bin/matlab"
+  register: matlab_binary
+
+- name: "Instalacja MATLAB {{ matlab_version }}"
+  when: not matlab_binary.stat.exists
+  block:
+    - name: Utwórz tymczasowy katalog instalacyjny
+      file:
+        path: "{{ matlab_tmp_install_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Rozpakuj archiwum instalacyjne MATLABa na serwerze docelowym
+      unarchive:
+        src: "{{ matlab_installer_local_path }}"
+        dest: "{{ matlab_tmp_install_dir }}"
+
+    - name: Wygeneruj plik installer_input.txt z szablonu
+      template:
+        src: installer_input.txt.j2
+        dest: "{{ matlab_tmp_install_dir }}/installer_input.txt"
+
+    - name: Uruchom instalator MATLABa w trybie cichym
+      become: yes # Użyj sudo do instalacji
+      command: >
+        {{ matlab_tmp_install_dir }}/install
+        -inputFile {{ matlab_tmp_install_dir }}/installer_input.txt
+      args:
+        # Ten trik zapobiega ponownemu uruchomieniu, jeśli plik już istnieje
+        creates: "{{ matlab_destination_folder }}/bin/matlab"
+
+  always:
+    - name: Zawsze usuwaj tymczasowy katalog instalacyjny
+      become: yes
+      file:
+        path: "{{ matlab_tmp_install_dir }}"
+        state: absent
