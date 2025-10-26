@@ -50,6 +50,7 @@
       changed_when: apt_fix.rc == 0
       failed_when: apt_fix.rc != 0
 
+
 - name: Sprawdź, czy runner jest już zarejestrowany (idempotentność)
   become: yes
   ansible.builtin.command: "grep -q 'url = \"{{ gitlab_runner_registration_url }}\"' /etc/gitlab-runner/config.toml"
