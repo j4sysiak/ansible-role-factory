@@ -1,0 +1,7 @@
+---
+# defaults file for gitlab_runner
+
+gitlab_runner_description: "Lokalny Docker Runner"
+gitlab_runner_tags: "docker,linux,local"
+gitlab_runner_executor: "docker"
+gitlab_runner_docker_image: "ubuntu:latest"

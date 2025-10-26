@@ -1,0 +1,12 @@
+---
+- name: Wdróż serwer GitLab CE na lokalnym hoście
+  hosts: local      # <-- ZMIANA: Celujemy w naszą nową, lokalną grupę
+  become: yes       # <-- Nadal potrzebne, bo instalacja Dockera wymaga sudo
+
+  vars:
+    # Dla instalacji lokalnej, 'localhost' jest poprawną wartością.
+    # Umożliwi dostęp do GitLaba z przeglądarki pod adresem http://localhost
+    gitlab_hostname: "localhost"
+
+  roles:
+    - role: gitlab_ce

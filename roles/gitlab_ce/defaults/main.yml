@@ -1,0 +1,20 @@
+---
+# defaults file for gitlab_ce
+
+# WAŻNE: To musi być prawdziwa, działająca nazwa DNS lub publiczny adres IP serwera!
+# GitLab używa tego do generowania URL-i wewnątrz aplikacji.
+gitlab_hostname: "gitlab.example.com"
+
+# Nazwa kontenera Docker
+gitlab_container_name: "gitlab"
+
+# Obraz Docker do użycia
+gitlab_image: "gitlab/gitlab-ce:latest"
+
+# Mapowanie portów (host:kontener)
+gitlab_http_port: "80"
+gitlab_https_port: "443"
+gitlab_ssh_port: "2222" # Używamy 2222 na hoście, aby uniknąć konfliktu z SSH serwera
+
+# Ścieżki na serwerze-hoście do przechowywania danych GitLaba (trwałość!)
+gitlab_data_path: "/srv/gitlab"

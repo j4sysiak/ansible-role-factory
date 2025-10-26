@@ -1,0 +1,87 @@
+---
+# tasks file for gitlab_ce
+
+# --- BLOK 1: Instalacja zależności (Docker) ---
+- name: Zainstaluj zależności dla repozytorium Dockera
+  become: yes
+  ansible.builtin.package:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+
+- name: Dodaj klucz GPG repozytorium Dockera
+  become: yes
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Dodaj repozytorium Dockera
+  become: yes
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+    state: present
+
+- name: Zainstaluj Docker Engine
+  become: yes
+  ansible.builtin.package:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+
+# NOWA, POPRAWNA WERSJA
+- name: Zainstaluj bibliotekę 'docker' dla Pythona (wymaganą przez Ansible)
+  become: yes
+  ansible.builtin.package:
+    name: python3-docker # Nazwa pakietu w repozytorium Ubuntu/Debian
+    state: present
+
+# --- BLOK 2: Przygotowanie katalogów dla danych GitLaba ---
+- name: Stwórz katalogi dla danych, logów i konfiguracji GitLaba
+  become: yes
+  ansible.builtin.file:
+    path: "{{ gitlab_data_path }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - config
+    - logs
+    - data
+
+# --- BLOK 3: Uruchomienie kontenera GitLab ---
+- name: Uruchom i skonfiguruj kontener GitLab
+  become: yes
+  community.docker.docker_container:
+    name: "{{ gitlab_container_name }}"
+    image: "{{ gitlab_image }}"
+    hostname: "{{ gitlab_hostname }}"
+    restart_policy: always
+    ports:
+      - "{{ gitlab_http_port }}:80"
+      - "{{ gitlab_https_port }}:443"
+      - "{{ gitlab_ssh_port }}:22"
+    volumes:
+      - "{{ gitlab_data_path }}/config:/etc/gitlab"
+      - "{{ gitlab_data_path }}/logs:/var/log/gitlab"
+      - "{{ gitlab_data_path }}/data:/var/opt/gitlab"
+
+# --- BLOK 4: Pobranie początkowego hasła roota ---
+- name: Poczekaj na wygenerowanie początkowego hasła roota (może to potrwać kilka minut)
+  become: yes
+  # Używamy pętli 'until', aby Ansible próbował wielokrotnie, aż plik się pojawi
+  ansible.builtin.command: docker exec {{ gitlab_container_name }} cat /etc/gitlab/initial_root_password
+  register: initial_password_result
+  until: initial_password_result.rc == 0
+  retries: 30 # Próbuj 30 razy
+  delay: 10   # Z 10-sekundowym opóźnieniem między próbami (łącznie 5 minut)
+  changed_when: false # Odczytanie pliku nie jest zmianą
+
+- name: Wyświetl początkowe hasło roota
+  ansible.builtin.debug:
+    msg: "Initial GitLab root password: {{ initial_password_result.stdout_lines[0] }}"

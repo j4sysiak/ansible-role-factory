@@ -1,0 +1,7 @@
+---
+# handlers file for gitlab_runner
+- name: restart gitlab-runner
+  become: yes
+  ansible.builtin.service:
+    name: gitlab-runner
+    state: restarted

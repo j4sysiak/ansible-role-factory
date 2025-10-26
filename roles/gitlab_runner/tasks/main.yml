@@ -1,0 +1,104 @@
+---
+# tasks file for gitlab_runner
+
+- name: Dodaj klucz GPG i repozytorium GitLab Runnera
+  become: yes
+  block:
+    - name: Dodaj klucz GPG
+      ansible.builtin.apt_key:
+        url: https://packages.gitlab.com/runner/gitlab-runner/gpgkey
+        state: present
+
+    - name: Dodaj repozytorium
+      ansible.builtin.apt_repository:
+        repo: "deb https://packages.gitlab.com/runner/gitlab-runner/ubuntu/ {{ ansible_lsb.codename }} main"
+        state: present
+        filename: gitlab-runner
+
+- name: Zainstaluj pakiet gitlab-runner (bez pinowania, z kontrolą i fallback)
+  become: yes
+  block:
+    - name: Wymuś aktualizację cache'u APT
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 0
+
+    - name: Pokaż dostępne wersje gitlab-runner (informacyjnie)
+      ansible.builtin.command: apt-cache madison gitlab-runner || apt-cache policy gitlab-runner
+      register: gitlab_versions
+      changed_when: false
+      failed_when: false
+
+    - name: Wyświetl dostępne wersje
+      ansible.builtin.debug:
+        var: gitlab_versions.stdout_lines
+
+    - name: Zainstaluj gitlab-runner (retry jeśli transientny błąd)
+      ansible.builtin.apt:
+        name: gitlab-runner
+        state: present
+        install_recommends: no
+      register: gitlab_install
+      retries: 3
+      delay: 10
+      until: gitlab_install.failed == false
+
+    - name: 'Fallback: spróbuj apt-get install --fix-missing jeśli moduł apt nie powiódł się'
+      ansible.builtin.command: apt-get install -y --fix-missing gitlab-runner
+      when: gitlab_install is defined and gitlab_install.failed
+      register: apt_fix
+      changed_when: apt_fix.rc == 0
+      failed_when: apt_fix.rc != 0
+
+- name: Sprawdź, czy runner jest już zarejestrowany (idempotentność)
+  become: yes
+  ansible.builtin.command: "grep -q 'url = \"{{ gitlab_runner_registration_url }}\"' /etc/gitlab-runner/config.toml"
+  register: runner_registered
+  failed_when: false
+  changed_when: false
+
+
+
+- name: Sprawdź dostępność API GitLab (retry)
+  become: no
+  ansible.builtin.uri:
+    url: "{{ gitlab_runner_registration_url }}/api/v4/version"
+    method: GET
+    return_content: no
+    validate_certs: yes
+  register: gitlab_api
+  retries: 6
+  delay: 10
+  until: gitlab_api.status == 200
+  when: runner_registered.rc != 0
+
+- name: Zarejestruj GitLab Runnera (minimalne argumenty)
+  become: yes
+  when:
+    - runner_registered.rc != 0
+    - gitlab_api is defined
+    - gitlab_api.status == 200
+  ansible.builtin.command: >
+    gitlab-runner register --non-interactive
+      --url "{{ gitlab_runner_registration_url }}"
+      --token "{{ gitlab_runner_registration_token }}"
+      --name "{{ gitlab_runner_description | default('gitlab-runner') }}"
+      --executor "{{ gitlab_runner_executor }}"
+  register: gitlab_register
+  changed_when: gitlab_register.rc == 0
+  failed_when: gitlab_register.rc != 0
+  notify: restart gitlab-runner
+
+- name: Błąd - API GitLab nieosiągalne, rejestracja przerwana
+  ansible.builtin.fail:
+    msg: "Nie można połączyć się z {{ gitlab_runner_registration_url }}. Upewnij się, że GitLab działa i adres/token są poprawne."
+  when:
+    - runner_registered.rc != 0
+    - gitlab_api is defined and gitlab_api.status is not defined or gitlab_api.status != 200
+
+- name: Upewnij się, że usługa gitlab-runner jest uruchomiona i włączona
+  become: yes
+  ansible.builtin.service:
+    name: gitlab-runner
+    state: started
+    enabled: yes
