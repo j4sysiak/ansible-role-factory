@@ -1,0 +1,10 @@
+---
+- name: Wdróż i skonfiguruj lokalnego GitLab Runnera
+  hosts: local
+  become: yes
+
+  vars_files:
+    - roles/gitlab_runner/vars/vault.yml
+
+  roles:
+    - role: gitlab_runner

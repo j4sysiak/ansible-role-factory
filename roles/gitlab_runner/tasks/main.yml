@@ -1,0 +1,57 @@
+---
+# tasks file for gitlab_runner
+
+- name: Dodaj klucz GPG i repozytorium GitLab Runnera
+  become: yes
+  block:
+    - name: Dodaj klucz GPG
+      ansible.builtin.apt_key:
+        url: https://packages.gitlab.com/runner/gitlab-runner/gpgkey
+        state: present
+
+    - name: Dodaj repozytorium
+      ansible.builtin.apt_repository:
+        repo: "deb https://packages.gitlab.com/runner/gitlab-runner/ubuntu/ {{ ansible_lsb.codename }} main"
+        state: present
+        filename: gitlab-runner
+
+- name: Zainstaluj pakiet gitlab-runner
+  become: yes
+  block:
+    - name: Wymuś aktualizację cache'u APT
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 1 # Ustawia ważność cache'u na 1 sekundę, co zmusza do aktualizacji
+
+    - name: Zainstaluj właściwy pakiet
+      ansible.builtin.apt: # Używamy 'apt' zamiast 'package' dla większej kontroli
+        name: gitlab-runner
+        state: present
+
+- name: Sprawdź, czy runner jest już zarejestrowany (idempotentność)
+  become: yes
+  ansible.builtin.command: "grep -q 'url = \"{{ gitlab_runner_registration_url }}\"' /etc/gitlab-runner/config.toml"
+  register: runner_registered
+  failed_when: false
+  changed_when: false
+
+- name: Zarejestruj GitLab Runnera, jeśli jest taka potrzeba
+  become: yes
+  when: runner_registered.rc != 0
+  ansible.builtin.command: >
+    gitlab-runner register
+      --non-interactive
+      --url "{{ gitlab_runner_registration_url }}"
+      --token "{{ gitlab_runner_registration_token }}"
+      --description "{{ gitlab_runner_description }}"
+      --tag-list "{{ gitlab_runner_tags }}"
+      --executor "{{ gitlab_runner_executor }}"
+      --docker-image "{{ gitlab_runner_docker_image }}"
+  notify: restart gitlab-runner
+
+- name: Upewnij się, że usługa gitlab-runner jest uruchomiona i włączona
+  become: yes
+  ansible.builtin.service:
+    name: gitlab-runner
+    state: started
+    enabled: yes
