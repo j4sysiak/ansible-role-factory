@@ -60,18 +60,17 @@
 
 
 
-- name: Sprawdź dostępność API GitLab (retry)
-  become: no
-  ansible.builtin.uri:
-    url: "{{ gitlab_runner_registration_url }}/api/v4/version"
-    method: GET
-    return_content: no
-    validate_certs: yes
-  register: gitlab_api
-  retries: 6
-  delay: 10
-  until: gitlab_api.status == 200
-  when: runner_registered.rc != 0
+  # --- WYKOMENTUJ LUB USUŃ TEN BLOK ---
+  # - name: Sprawdź dostępność API GitLab (retry)
+  #   ansible.builtin.uri:
+  #     url: "{{ gitlab_runner_registration_url }}/api/v4/version"
+  #     # ... (reszta opcji tego zadania) ...
+  #   register: gitlab_api_check
+  #   until: gitlab_api_check.status == 200
+  #   retries: 6
+  #   delay: 10
+  #until: gitlab_api.status == 200
+  #when: runner_registered.rc != 0
 
 - name: Zarejestruj GitLab Runnera (minimalne argumenty)
   become: yes
@@ -90,12 +89,7 @@
   failed_when: gitlab_register.rc != 0
   notify: restart gitlab-runner
 
-- name: Błąd - API GitLab nieosiągalne, rejestracja przerwana
-  ansible.builtin.fail:
-    msg: "Nie można połączyć się z {{ gitlab_runner_registration_url }}. Upewnij się, że GitLab działa i adres/token są poprawne."
-  when:
-    - runner_registered.rc != 0
-    - gitlab_api is defined and gitlab_api.status is not defined or gitlab_api.status != 200
+
 
 - name: Upewnij się, że usługa gitlab-runner jest uruchomiona i włączona
   become: yes
