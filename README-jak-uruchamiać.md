@@ -9,6 +9,7 @@ i odpal to:
 Teraz Twój cykl pracy (np. podczas testowania zmian) wygląda tak:
 "Burzenie" starej konfiguracji (aby mieć czysty start):
 
+
 (w terminalu z aktywnym venv)
 # (ansible-venv) jacek@BERLIN:~/dev/ansible-master-config$ ansible-playbook playbooks/teardown.yml
 
